@@ -5,8 +5,10 @@ package schedule
 import (
 	context "context"
 
-	models "github.com/grafana/grafana/pkg/services/ngalert/models"
+	events "github.com/grafana/grafana/pkg/events"
 	mock "github.com/stretchr/testify/mock"
+
+	models "github.com/grafana/grafana/pkg/services/ngalert/models"
 
 	testing "testing"
 
@@ -76,9 +78,37 @@ func (_m *FakeScheduleService) UpdateAlertRule(key models.AlertRuleKey) {
 	_m.Called(key)
 }
 
+// UpdateAlertRulesByNamespaceUID provides a mock function with given fields: ctx, orgID, uid
+func (_m *FakeScheduleService) UpdateAlertRulesByNamespaceUID(ctx context.Context, orgID int64, uid string) error {
+	ret := _m.Called(ctx, orgID, uid)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, string) error); ok {
+		r0 = rf(ctx, orgID, uid)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // evalApplied provides a mock function with given fields: _a0, _a1
 func (_m *FakeScheduleService) evalApplied(_a0 models.AlertRuleKey, _a1 time.Time) {
 	_m.Called(_a0, _a1)
+}
+
+// folderUpdateHandler provides a mock function with given fields: ctx, evt
+func (_m *FakeScheduleService) folderUpdateHandler(ctx context.Context, evt *events.FolderUpdated) error {
+	ret := _m.Called(ctx, evt)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *events.FolderUpdated) error); ok {
+		r0 = rf(ctx, evt)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // overrideCfg provides a mock function with given fields: cfg
