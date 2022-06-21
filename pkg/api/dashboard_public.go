@@ -2,13 +2,16 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/grafana/grafana/pkg/api/dtos"
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/services/dashboards"
+	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/web"
 )
 
@@ -104,7 +107,20 @@ func (hs *HTTPServer) QueryPublicDashboard(c *models.ReqContext) response.Respon
 		return handleDashboardErr(http.StatusInternalServerError, "Failed to get queries for public dashboard", err)
 	}
 
-	anonymousUser := &models.SignedInUser{OrgId: dashboard.OrgId}
+	// Get all needed datasource UIDs from queries
+	var uids []string
+	for _, query := range reqDTO.Queries {
+		uids = append(uids, query.Get("datasource").Get("uid").MustString())
+	}
+
+	// Create a temp user with read-only datasource permissions
+	anonymousUser := &models.SignedInUser{OrgId: dashboard.OrgId, Permissions: make(map[int64]map[string][]string)}
+	permissions := make(map[string][]string)
+	datasourceScope := fmt.Sprintf("datasources:uid:%s", strings.Join(uids, ","))
+	permissions[datasources.ActionQuery] = []string{datasourceScope}
+	permissions[datasources.ActionRead] = []string{datasourceScope}
+	anonymousUser.Permissions[dashboard.OrgId] = permissions
+
 	resp, err := hs.queryDataService.QueryDataMultipleSources(c.Req.Context(), anonymousUser, c.SkipCache, reqDTO, true)
 
 	if err != nil {
